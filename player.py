@@ -1,6 +1,6 @@
 import pygame
 from circleshape import CircleShape
-from constants import (PLAYER_RADIUS, PLAYER_TURN_SPEED, PLAYER_SPEED)
+from constants import *
 
 
 white = (255, 255, 255)
@@ -13,7 +13,9 @@ class Player(CircleShape):
         if hasattr(self, 'containers'):
             self.add(self.containers)
         self.rotation = 0
+        self.shot_timer = 0
 
+        
     def triangle(self):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
@@ -30,6 +32,7 @@ class Player(CircleShape):
 
     def update(self, dt):
         keys = pygame.key.get_pressed()
+        self.shot_timer -= dt
 
         if keys[pygame.K_w]:
             self.move(dt)
@@ -39,10 +42,21 @@ class Player(CircleShape):
             self.rotate(dt * -1)
         if keys[pygame.K_d]:
             self.rotate(dt)
-    
+        if keys[pygame.K_SPACE] and self.shot_timer <= 0:
+            self.shoot(dt)
+            self.shot_timer = PLAYER_SHOT_COOLDOWN
+
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt
+
+    def shoot(self, dt):
+        bullet = Shot(self.position.x, self.position.y)
+        forward = pygame.Vector2(0,1)
+        rotated_forward = forward.rotate(self.rotation)
+        bullet.velocity = rotated_forward * PLAYER_SHOOT_SPEED
+        
+        
 
 
 
@@ -51,3 +65,15 @@ class Player(CircleShape):
 class Shot(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, SHOT_RADIUS)
+        if hasattr(self, 'containers'):
+            self.add(self.containers)
+    
+    def draw(self, screen):
+        pygame.draw.circle(screen, white, self.position, self.radius, width=2)
+
+    def update(self, dt):
+        self.move(dt)
+
+    def move(self, dt):
+        self.position += (self.velocity * dt)
+
